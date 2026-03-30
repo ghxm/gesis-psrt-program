@@ -6,6 +6,9 @@ date-format: long
 format:
   pdf:
     documentclass: article
+    papersize: a4
+    geometry:
+      - margin=2.5cm
     include-in-header: _preamble.tex
     toc: false
     number-sections: false
