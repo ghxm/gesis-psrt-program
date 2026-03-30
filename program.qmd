@@ -163,6 +163,14 @@ tbl <- gsub("\\\\bottomrule", "", tbl)
 cat(tbl)
 ```
 
+\vspace{1em}
+
+## Additional information
+
+In case you have any questions about the schedule or the papers, please contact the organizers.
+
+
+
 ```{r}
 #| echo: false
 #| output: asis
@@ -182,6 +190,7 @@ cat(paste(
 cat("}\n")
 cat("````\n")
 ```
+
 
 \newpage
 
