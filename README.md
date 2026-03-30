@@ -1,6 +1,6 @@
-# GESIS PSRT Conference Program Template (Quarto > pandoc > LaTeX)
+# GESIS PSRT Conference Program Template
 
-A simple Quarto template for generating a conference program PDF from two CSV files. Produces a one-page schedule overview followed by abstracts grouped by panel. Originally designed for the GESIS Political Science Roundtable.
+A simple Quarto (Quarto > pandoc > LaTeX) template for generating a conference program PDF from two CSV files. Produces a one-page schedule overview followed by abstracts grouped by panel. Originally designed for the GESIS Political Science Roundtable.
 
 ## Usage
 
@@ -73,14 +73,36 @@ All configuration lives in the YAML frontmatter of `program.qmd`.
 | `panel_show_time` | `true` | Show the time range next to panel headings in the abstracts section |
 | `type_icons` | `{paper: "P", presentation: "T", lightning: "L"}` | Mapping of paper types to icon letters shown in the schedule and abstracts. Add or change entries to match the types in your `papers.csv`. |
 
+
 ## Styling
 
 Visual styling is controlled in `_preamble.tex`, including
 
-- **Page geometry**: `\usepackage[a4paper, margin=2cm]{geometry}`
+- **Page geometry**: `papersize` and `geometry` fields in YAML frontmatter
 - **Running header text**: `\fancyhead[L]{...}` and `\fancyhead[R]{...}`
 - **Link colors**: `\hypersetup{linkcolor=..., urlcolor=...}`
 - **Schedule table row spacing**: `\renewcommand{\arraystretch}{1.4}` (set in `program.qmd`)
 - **Abstract entry spacing**: adjust values in `\paperentry`, `\paperseparator`, `\panelsection`
 - **Type icon style**: `\typeicon` command controls how icon letters are rendered
 
+## Pulling template updates
+
+When you create a repo from this template, GitHub does not maintain a link to the original. To pull in future template updates (e.g. bug fixes or new features), add this repo as a remote:
+
+```bash
+# One-time setup
+git remote add template https://github.com/ghxm/gesis-psrt-program.git
+
+# Pull updates
+git fetch template
+git merge template/main --allow-unrelated-histories
+```
+
+Your data files (`data/schedule.csv`, `data/papers.csv`) and the YAML frontmatter in `program.qmd` will likely conflict since you've customized them. Resolve by keeping your versions. To automate this for the CSV files, add a `.gitattributes` to your repo:
+
+```
+data/schedule.csv merge=ours
+data/papers.csv merge=ours
+```
+
+This tells git to always keep your version of those files during merges. Changes to `_preamble.tex` and the R code in `program.qmd` should merge cleanly in most cases.
