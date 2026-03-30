@@ -1,0 +1,249 @@
+---
+title: "GESIS Political Science Roundtable (PSRT)"
+subtitle: "Conference Program"
+date: "June 15, 2026"
+date-format: long
+format:
+  pdf:
+    documentclass: article
+    include-in-header: _preamble.tex
+    toc: false
+    number-sections: false
+    keep-tex: true
+params:
+  venue: "GESIS -- Leibniz Institute for the Social Sciences, Cologne"
+  schedule_csv: "data/schedule.csv"
+  papers_csv: "data/papers.csv"
+  panel_prefix: "Panel: "
+  panel_clearpage: true
+  panel_show_time: true
+  type_icons:
+    value:
+      paper: "P"
+      presentation: "T"
+      lightning: "L"
+---
+
+```{r}
+#| echo: false
+#| label: setup
+
+# -- Read params and data --------------------------------------------------
+VENUE <- params$venue
+PANEL_PREFIX <- params$panel_prefix
+TYPE_ICONS <- params$type_icons
+
+schedule <- read.csv(params$schedule_csv, stringsAsFactors = FALSE, strip.white = TRUE)
+papers <- read.csv(params$papers_csv, stringsAsFactors = FALSE, strip.white = TRUE)
+
+# -- Helpers ---------------------------------------------------------------
+tex_escape <- function(text) {
+  text <- gsub("\\\\", "\\\\textbackslash{}", text)
+  text <- gsub("&", "\\\\&", text)
+  text <- gsub("%", "\\\\%", text)
+  text <- gsub("\\$", "\\\\$", text)
+  text <- gsub("#", "\\\\#", text)
+  text <- gsub("_", "\\\\_", text)
+  text <- gsub("\\{", "\\\\{", text)
+  text <- gsub("\\}", "\\\\}", text)
+  text <- gsub("~", "\\\\textasciitilde{}", text)
+  text <- gsub("\\^", "\\\\textasciicircum{}", text)
+  text
+}
+
+make_slug <- function(text) {
+  slug <- tolower(trimws(text))
+  slug <- gsub("[^a-z0-9]+", "-", slug)
+  slug <- gsub("^-|-$", "", slug)
+  slug
+}
+
+get_panel_name <- function(title) {
+  if (startsWith(title, PANEL_PREFIX)) {
+    return(substring(title, nchar(PANEL_PREFIX) + 1))
+  }
+  title
+}
+
+get_type_icon <- function(ptype) {
+  ptype <- tolower(trimws(ptype))
+  letter <- if (ptype %in% names(TYPE_ICONS)) TYPE_ICONS[[ptype]] else ptype
+  paste0("\\typeicon{", tex_escape(letter), "}")
+}
+
+has_dates <- "date" %in% names(schedule)
+multi_day <- has_dates && length(unique(schedule$date)) > 1
+```
+
+\begin{center}
+{\small `r tex_escape(VENUE)`}
+\end{center}
+
+## Schedule
+
+```{r}
+#| echo: false
+#| output: asis
+
+# -- Build schedule table --------------------------------------------------
+rows <- list()
+
+for (i in seq_len(nrow(schedule))) {
+  time_str <- schedule$time[i]
+  title <- schedule$title[i]
+  item_type <- tolower(schedule$type[i])
+
+  # Multi-day: insert date header row
+  if (multi_day) {
+    row_date <- schedule$date[i]
+    if (i == 1 || row_date != schedule$date[i - 1]) {
+      rows[[length(rows) + 1]] <- data.frame(
+        Time = paste0("\\textbf{\\sffamily ", tex_escape(row_date), "}"),
+        Content = ""
+      )
+    }
+  }
+
+  if (item_type == "break") {
+    rows[[length(rows) + 1]] <- data.frame(
+      Time = paste0("\\textcolor{gray}{\\textsf{", tex_escape(time_str), "}}"),
+      Content = paste0("\\textit{", tex_escape(title), "}")
+    )
+
+  } else if (item_type == "event") {
+    rows[[length(rows) + 1]] <- data.frame(
+      Time = paste0("\\textsf{", tex_escape(time_str), "}"),
+      Content = tex_escape(title)
+    )
+
+  } else if (item_type == "panel") {
+    panel_name <- get_panel_name(title)
+    slug <- make_slug(panel_name)
+    rows[[length(rows) + 1]] <- data.frame(
+      Time = paste0("\\textsf{", tex_escape(time_str), "}"),
+      Content = paste0("\\textbf{\\hyperlink{", slug, "}{", tex_escape(panel_name), "}}")
+    )
+
+    # Add paper rows under this panel
+    panel_papers <- papers[papers$panel == panel_name, ]
+    for (j in seq_len(nrow(panel_papers))) {
+      pp <- panel_papers[j, ]
+      paper_slug <- make_slug(paste(pp$author, pp$title))
+      icon <- get_type_icon(pp$type)
+      rows[[length(rows) + 1]] <- data.frame(
+        Time = "",
+        Content = paste0(
+          "\\hspace{1.2em}", icon, "\\hspace{0.3em}",
+          "{\\small ", tex_escape(pp$author),
+          " -- \\hyperlink{", paper_slug, "}{", tex_escape(pp$title), "}}"
+        )
+      )
+    }
+  }
+}
+
+schedule_df <- do.call(rbind, rows)
+
+# Render as LaTeX table
+tbl <- knitr::kable(
+  schedule_df,
+  format = "latex",
+  booktabs = TRUE,
+  escape = FALSE,
+  col.names = NULL,
+  linesep = ""
+)
+
+# Full width, remove top/bottom rules, increase row padding
+tbl <- gsub("\\\\begin\\{tabular\\}\\{ll\\}", "\\\\renewcommand{\\\\arraystretch}{1.4}\n\\\\begin{tabularx}{\\\\textwidth}{lX}", tbl)
+tbl <- gsub("\\\\end\\{tabular\\}", "\\\\end{tabularx}", tbl)
+tbl <- gsub("\\\\toprule", "", tbl)
+tbl <- gsub("\\\\bottomrule", "", tbl)
+
+cat(tbl)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+# -- Legend -----------------------------------------------------------------
+cat("````{=latex}\n")
+cat("\\vfill\n")
+cat("\\hrule\n")
+cat("\\vspace{0.3em}\n")
+cat("{\\small ")
+cat(paste(
+  sapply(names(TYPE_ICONS), function(t) {
+    paste0("\\typeicon{", tex_escape(TYPE_ICONS[[t]]), "}\\,=\\,", tex_escape(t))
+  }),
+  collapse = " \\qquad "
+))
+cat("}\n")
+cat("````\n")
+```
+
+\newpage
+
+```{r}
+#| echo: false
+#| output: asis
+
+# -- Abstracts -------------------------------------------------------------
+cat("````{=latex}\n")
+
+panel_rows <- schedule[tolower(schedule$type) == "panel", ]
+seen_panels <- unique(sapply(panel_rows$title, get_panel_name))
+
+# Build a lookup: panel name -> start--end time from schedule
+# End time = start time of the next schedule row
+panel_time_ranges <- sapply(seq_len(nrow(panel_rows)), function(k) {
+  row_idx <- which(schedule$title == panel_rows$title[k] & schedule$time == panel_rows$time[k])[1]
+  start <- panel_rows$time[k]
+  end <- if (row_idx < nrow(schedule)) schedule$time[row_idx + 1] else ""
+  time_str <- if (end != "") paste0(start, "--", end) else start
+  # Prepend date for multi-day conferences
+  if (multi_day) {
+    panel_date <- schedule$date[row_idx]
+    time_str <- paste0(panel_date, ", ", time_str)
+  }
+  time_str
+})
+names(panel_time_ranges) <- sapply(panel_rows$title, get_panel_name)
+
+for (idx in seq_along(seen_panels)) {
+  panel_name <- seen_panels[idx]
+  slug <- make_slug(panel_name)
+
+  # Clearpage before each panel (except the first)
+  if (params$panel_clearpage && idx > 1) {
+    cat("\\clearpage\n")
+  }
+
+  cat("\\hypertarget{", slug, "}{}\n", sep = "")
+  if (params$panel_show_time && panel_name %in% names(panel_time_ranges)) {
+    cat("\\panelsection[", tex_escape(panel_time_ranges[[panel_name]]), "]{", tex_escape(panel_name), "}\n\n", sep = "")
+  } else {
+    cat("\\panelsection{", tex_escape(panel_name), "}\n\n", sep = "")
+  }
+
+  panel_papers <- papers[papers$panel == panel_name, ]
+  for (j in seq_len(nrow(panel_papers))) {
+    pp <- panel_papers[j, ]
+    paper_slug <- make_slug(paste(pp$author, pp$title))
+    ptype <- tolower(trimws(pp$type))
+    icon <- get_type_icon(ptype)
+
+    cat("\\needspace{5\\baselineskip}\n")
+    cat("\\hypertarget{", paper_slug, "}{}\n", sep = "")
+    cat("\\paperentry{", tex_escape(pp$title), "}{", tex_escape(pp$author), "}{", icon, "}{", tex_escape(ptype), "}\n\n", sep = "")
+    cat(tex_escape(trimws(pp$abstract)), "\n\n")
+
+    if (j < nrow(panel_papers)) {
+      cat("\\paperseparator\n\n")
+    }
+  }
+}
+
+cat("````\n")
+```
