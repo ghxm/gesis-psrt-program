@@ -37,6 +37,16 @@ All papers/presentations. Row order within a panel determines presentation order
 | `type` | Paper type (free text, e.g. `paper`, `presentation`, `lightning`) |
 | `abstract` | Abstract text |
 
+## Schedule-only / print mode
+
+To render just the schedule page (no abstracts, no hyperlinks, no page number) for printing as a single A4 handout:
+
+```bash
+quarto render program.qmd -P schedule_only:true
+```
+
+Or set `schedule_only: true` in the YAML frontmatter.
+
 ## Configuration
 
 All configuration lives in the YAML frontmatter of `program.qmd`.
@@ -54,6 +64,7 @@ All configuration lives in the YAML frontmatter of `program.qmd`.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `schedule_only` | `false` | Print mode: schedule page only, no abstracts, no hyperlinks, no page number |
 | `venue` | | Venue name, shown below the title on page 1 |
 | `schedule_csv` | `data/schedule.csv` | Path to the schedule CSV |
 | `papers_csv` | `data/papers.csv` | Path to the papers CSV |

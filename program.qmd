@@ -15,6 +15,7 @@ params:
   schedule_csv: "data/schedule.csv"
   papers_csv: "data/papers.csv"
   panel_prefix: "Panel: "
+  schedule_only: false
   panel_clearpage: true
   panel_show_time: true
   type_icons:
@@ -73,6 +74,17 @@ get_type_icon <- function(ptype) {
 
 has_dates <- "date" %in% names(schedule)
 multi_day <- has_dates && length(unique(schedule$date)) > 1
+SCHEDULE_ONLY <- params$schedule_only
+```
+
+```{r}
+#| echo: false
+#| output: asis
+if (SCHEDULE_ONLY) {
+  cat("````{=latex}\n")
+  cat("\\pagestyle{empty}\n")
+  cat("````\n")
+}
 ```
 
 \begin{center}
@@ -119,9 +131,14 @@ for (i in seq_len(nrow(schedule))) {
   } else if (item_type == "panel") {
     panel_name <- get_panel_name(title)
     slug <- make_slug(panel_name)
+    if (SCHEDULE_ONLY) {
+      panel_content <- paste0("\\textbf{", tex_escape(panel_name), "}")
+    } else {
+      panel_content <- paste0("\\textbf{\\hyperlink{", slug, "}{", tex_escape(panel_name), "}}")
+    }
     rows[[length(rows) + 1]] <- data.frame(
       Time = paste0("\\textsf{", tex_escape(time_str), "}"),
-      Content = paste0("\\textbf{\\hyperlink{", slug, "}{", tex_escape(panel_name), "}}")
+      Content = panel_content
     )
 
     # Add paper rows under this panel
@@ -130,12 +147,16 @@ for (i in seq_len(nrow(schedule))) {
       pp <- panel_papers[j, ]
       paper_slug <- make_slug(paste(pp$author, pp$title))
       icon <- get_type_icon(pp$type)
+      if (SCHEDULE_ONLY) {
+        paper_title <- tex_escape(pp$title)
+      } else {
+        paper_title <- paste0("\\hyperlink{", paper_slug, "}{", tex_escape(pp$title), "}")
+      }
       rows[[length(rows) + 1]] <- data.frame(
         Time = "",
         Content = paste0(
           "\\hspace{1.2em}", icon, "\\hspace{0.3em}",
-          "{\\small ", tex_escape(pp$author),
-          " -- \\hyperlink{", paper_slug, "}{", tex_escape(pp$title), "}}"
+          "{\\small ", tex_escape(pp$author), " -- ", paper_title, "}"
         )
       )
     }
@@ -192,11 +213,16 @@ cat("````\n")
 ```
 
 
-\newpage
+```{r}
+#| echo: false
+#| output: asis
+if (!SCHEDULE_ONLY) cat("\n\\newpage\n")
+```
 
 ```{r}
 #| echo: false
 #| output: asis
+#| eval: !expr '!params$schedule_only'
 
 # -- Abstracts -------------------------------------------------------------
 cat("````{=latex}\n")
