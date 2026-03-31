@@ -19,11 +19,12 @@ The conference schedule. Each row is one schedule item.
 | Column | Description | Values |
 |--------|-------------|--------|
 | `time` | Start time | e.g. `09:00` |
-| `title` | Item title | For panels, use the format `Panel: Panel Name` (prefix is configurable) |
+| `title` | Item title | For panels, use the format `Panel: Panel Name` (prefix is configurable via `panel_prefix`) |
 | `type` | Item type | `panel`, `break`, or `event` |
+| `panel_id` | (panels only) Unique ID for this panel | e.g. `dem_back`, `comp_methods`. Used to link papers to panels. Leave blank for non-panel rows. |
 | `date` | (optional) Date | Only needed for multi-day conferences. If present with more than one unique value, date headers are shown in the schedule and panel headings include the date. |
 
-Panels are linked to papers via the panel name (title without the `Panel: ` prefix).
+Papers are linked to panels via `panel_id`. The display title comes from the schedule's `title` column, so you can rename a panel without touching `papers.csv`.
 
 ### `data/papers.csv`
 
@@ -31,7 +32,7 @@ All papers/presentations. Row order within a panel determines presentation order
 
 | Column | Description |
 |--------|-------------|
-| `panel` | Panel name, must match a panel title in `schedule.csv` (without the `Panel: ` prefix) |
+| `panel_id` | Panel ID, must match a `panel_id` in `schedule.csv` |
 | `author` | Author or presenter name |
 | `title` | Paper title |
 | `type` | Paper type (free text, e.g. `paper`, `presentation`, `lightning`) |

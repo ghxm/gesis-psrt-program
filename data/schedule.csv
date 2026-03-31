@@ -1,12 +1,12 @@
-time,title,type
-09:00,Registration & Coffee,break
-09:30,Welcome & Introduction,event
-09:45,Panel: Democratic Backsliding,panel
-11:00,Coffee Break,break
-11:15,Panel: Computational Methods in Political Science,panel
-12:30,Lunch,break
-13:30,Keynote: Digital Democracy in the Age of AI,event
-14:30,Panel: Political Communication,panel
-16:00,Coffee Break,break
-16:15,Panel: Institutional Trust,panel
-17:30,Closing Remarks & Farewell,event
+time,title,type,panel_id
+09:00,Registration & Coffee,break,
+09:30,Welcome & Introduction,event,
+09:45,Panel: Democratic Backsliding,panel,dem_back
+11:00,Coffee Break,break,
+11:15,Panel: Computational Methods in Political Science,panel,comp_methods
+12:30,Lunch,break,
+13:30,Keynote: Digital Democracy in the Age of AI,event,
+14:30,Panel: Political Communication,panel,pol_comm
+16:00,Coffee Break,break,
+16:15,Panel: Institutional Trust,panel,inst_trust
+17:30,Closing Remarks & Farewell,event,

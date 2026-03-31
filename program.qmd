@@ -36,6 +36,7 @@ params:
 VENUE <- params$venue
 PANEL_PREFIX <- params$panel_prefix
 TYPE_ICONS <- params$type_icons
+SCHEDULE_ONLY <- params$schedule_only
 
 schedule <- read.csv(params$schedule_csv, stringsAsFactors = FALSE, strip.white = TRUE)
 papers <- read.csv(params$papers_csv, stringsAsFactors = FALSE, strip.white = TRUE)
@@ -62,7 +63,7 @@ make_slug <- function(text) {
   slug
 }
 
-get_panel_name <- function(title) {
+get_panel_display_name <- function(title) {
   if (startsWith(title, PANEL_PREFIX)) {
     return(substring(title, nchar(PANEL_PREFIX) + 1))
   }
@@ -77,7 +78,13 @@ get_type_icon <- function(ptype) {
 
 has_dates <- "date" %in% names(schedule)
 multi_day <- has_dates && length(unique(schedule$date)) > 1
-SCHEDULE_ONLY <- params$schedule_only
+
+# -- Build panel lookup: panel_id -> display name --------------------------
+panel_schedule <- schedule[tolower(schedule$type) == "panel", ]
+panel_display_names <- setNames(
+  sapply(panel_schedule$title, get_panel_display_name),
+  panel_schedule$panel_id
+)
 ```
 
 ```{r}
@@ -132,8 +139,9 @@ for (i in seq_len(nrow(schedule))) {
     )
 
   } else if (item_type == "panel") {
-    panel_name <- get_panel_name(title)
-    slug <- make_slug(panel_name)
+    pid <- schedule$panel_id[i]
+    panel_name <- panel_display_names[[pid]]
+    slug <- make_slug(pid)
     if (SCHEDULE_ONLY) {
       panel_content <- paste0("\\textbf{", tex_escape(panel_name), "}")
     } else {
@@ -145,7 +153,7 @@ for (i in seq_len(nrow(schedule))) {
     )
 
     # Add paper rows under this panel
-    panel_papers <- papers[papers$panel == panel_name, ]
+    panel_papers <- papers[papers$panel_id == pid, ]
     for (j in seq_len(nrow(panel_papers))) {
       pp <- panel_papers[j, ]
       paper_slug <- make_slug(paste(pp$author, pp$title))
@@ -230,28 +238,28 @@ if (!SCHEDULE_ONLY) cat("\n\\newpage\n")
 # -- Abstracts -------------------------------------------------------------
 cat("````{=latex}\n")
 
-panel_rows <- schedule[tolower(schedule$type) == "panel", ]
-seen_panels <- unique(sapply(panel_rows$title, get_panel_name))
+# Get panel IDs in schedule order
+seen_pids <- unique(panel_schedule$panel_id)
 
-# Build a lookup: panel name -> start--end time from schedule
-# End time = start time of the next schedule row
-panel_time_ranges <- sapply(seq_len(nrow(panel_rows)), function(k) {
-  row_idx <- which(schedule$title == panel_rows$title[k] & schedule$time == panel_rows$time[k])[1]
-  start <- panel_rows$time[k]
+# Build a lookup: panel_id -> start--end time
+panel_time_ranges <- sapply(seq_len(nrow(panel_schedule)), function(k) {
+  row_idx <- which(schedule$panel_id == panel_schedule$panel_id[k] &
+                   schedule$time == panel_schedule$time[k])[1]
+  start <- panel_schedule$time[k]
   end <- if (row_idx < nrow(schedule)) schedule$time[row_idx + 1] else ""
   time_str <- if (end != "") paste0(start, "--", end) else start
-  # Prepend date for multi-day conferences
   if (multi_day) {
     panel_date <- schedule$date[row_idx]
     time_str <- paste0(panel_date, ", ", time_str)
   }
   time_str
 })
-names(panel_time_ranges) <- sapply(panel_rows$title, get_panel_name)
+names(panel_time_ranges) <- panel_schedule$panel_id
 
-for (idx in seq_along(seen_panels)) {
-  panel_name <- seen_panels[idx]
-  slug <- make_slug(panel_name)
+for (idx in seq_along(seen_pids)) {
+  pid <- seen_pids[idx]
+  panel_name <- panel_display_names[[pid]]
+  slug <- make_slug(pid)
 
   # Clearpage before each panel (except the first)
   if (params$panel_clearpage && idx > 1) {
@@ -259,13 +267,13 @@ for (idx in seq_along(seen_panels)) {
   }
 
   cat("\\hypertarget{", slug, "}{}\n", sep = "")
-  if (params$panel_show_time && panel_name %in% names(panel_time_ranges)) {
-    cat("\\panelsection[", tex_escape(panel_time_ranges[[panel_name]]), "]{", tex_escape(panel_name), "}\n\n", sep = "")
+  if (params$panel_show_time && pid %in% names(panel_time_ranges)) {
+    cat("\\panelsection[", tex_escape(panel_time_ranges[[pid]]), "]{", tex_escape(panel_name), "}\n\n", sep = "")
   } else {
     cat("\\panelsection{", tex_escape(panel_name), "}\n\n", sep = "")
   }
 
-  panel_papers <- papers[papers$panel == panel_name, ]
+  panel_papers <- papers[papers$panel_id == pid, ]
   for (j in seq_len(nrow(panel_papers))) {
     pp <- panel_papers[j, ]
     paper_slug <- make_slug(paste(pp$author, pp$title))
